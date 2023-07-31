@@ -39,14 +39,22 @@ func (l *Lexer) nextToken() token.Token {
 		case '/':
 			tok = newToken(token.DIVIDE, l.ch)
 		case '!':
+			/*
+				TODO:
+				If we were to start supporting more
+				two-character tokens in Monkey, we should probably abstract the behaviour away in a method
+				called makeTwoCharToken that peeks and advances if it found the right token
+			*/
 			if l.peekChar() == '=' {
-				tok = newToken(token.NOTEQ, l.ch)
+				tok = token.Token{Type: token.NOTEQ, Literal: string(l.ch) + string(l.peekChar())}
+				l.readChar()
 			} else {
 				tok = newToken(token.EXCLAIM, l.ch)
 			}
 		case '=':
 			if l.peekChar() == '='{
-				tok = newToken(token.EQ, l.ch)
+				tok = token.Token{Type: token.EQ, Literal: string(l.ch) + string(l.peekChar())}
+				l.readChar()
 			} else {
 				tok = newToken(token.ASSIGN, l.ch)
 			}
@@ -146,5 +154,13 @@ func (l *Lexer) readInt() string {
 func (l*Lexer) eatWhitespace() {
 	for l.ch == ' ' || l.ch == '\n' || l.ch == '\t' || l.ch == '\r'{
 		l.readChar()
+	}
+}
+
+func (l*Lexer) peekChar() byte {
+	if l.readPosition >= len(l.input) {
+		return 0
+	} else {
+		return l.input[l.readPosition]
 	}
 }
