@@ -16,7 +16,7 @@ func New (input string) *Lexer {
 }
 
 //make nextToken and newToken
-func (l *Lexer) nextToken() token.Token {
+func (l *Lexer) NextToken() token.Token {
 	var tok token.Token
 
 	l.eatWhitespace()
