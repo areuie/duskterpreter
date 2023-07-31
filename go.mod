@@ -1,3 +1,3 @@
-module monkey
+module duskterpreter
 
 go 1.20
