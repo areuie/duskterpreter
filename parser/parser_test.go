@@ -1,23 +1,23 @@
 package parser
 
 import (
-	"testing"
 	"duskterpreter/ast"
 	"duskterpreter/lexer"
+	"testing"
 )
 
 func TestLetStatements(t *testing.T) {
 	input := `
-		let x = 2;
-		let y = 10;
-
-		let foobar = 543824;
+	let x 5;
+	let = 10;
+	let 838383;
 	`
 
 	l := lexer.New(input)
 	p := New(l)
 
 	program := p.ParseProgram()
+	checkParserErrors(t, p)
 
 	//return error if it is nil or not length of 3
 
@@ -49,9 +49,48 @@ func TestLetStatements(t *testing.T) {
 		}
 	}
 
-	funct testLetStatement(t *testing.T, s ast.Statement, name string) bool {
-		if 
+}
+
+//tests whether or not it is a let statement
+func testLetStatement(t *testing.T, s ast.Statement, name string) bool { //testing env, statement given, expected name
+	//if it is not let
+	//is it a let statement?
+	//value
+	//name of the identifier
+	if s.TokenLiteral() != "let" {
+		t.Errorf(" s.TokenLiteral() not a let statement got:%q", s.TokenLiteral())
+		return false
+	}
+	letstmt, ok := s.(*ast.LetStatement)
+
+	if !ok {
+		t.Errorf("s is not an *ast.LetStatement")
+		return false
+	}
+	if letstmt.Name.Value != name { //help
+		t.Errorf("letstmt.Name.Value is not '%q'. got:'%q'", name, letstmt.Name.Value)
+		return false
+	}
+	if letstmt.Name.TokenLiteral() != name {//help
+		t.Errorf("letstmt.Name is not '%q'. got: '%q'", name, letstmt.Name)
+		return false
 	}
 
+	return true
+}
 
+func checkParserErrors (t *testing.T, p *Parser) {
+	error := p.errors
+
+	if len(error) == 0 {
+		return
+	}
+
+	t.Errorf("there are %d errors", len(error))
+
+	for _, msg := range error {
+		t.Errorf("parser error: %q",msg)
+	}
+
+	t.FailNow()
 }

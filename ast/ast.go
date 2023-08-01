@@ -34,20 +34,20 @@ type LetStatement struct {
 	//token, identifier, value
 	Token token.Token
 	Name *Identifier
-	Value string
+	Value Expression
 }
 
 //implement return tokenliteral (etc let) and 
-func (ls *LetStatement) expressionNode() { }
-func (ls *LetStatement) tokenLiteral() string { return ls.Token.Literal }
+func (ls *LetStatement) statementNode() { }
+func (ls *LetStatement) TokenLiteral() string { return ls.Token.Literal }
 // func (ls *LetStatement) push(s *Statement) {
 	
 // }
 
 type Identifier struct {
 	Token token.Token
-	Name *Identifier
+	Value string
 }
 
-func (i *Identifier) statementNode() { }
-func (i *Identifier) tokenLiteral() string { return i.Token.Literal }
+func (i *Identifier) expressionNode() { }
+func (i *Identifier) TokenLiteral() string { return i.Token.Literal }
