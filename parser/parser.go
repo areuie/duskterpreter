@@ -55,6 +55,8 @@ func New(l *lexer.Lexer) *Parser {
 	//need to add this bcs parseExpression can't find prefixParseFn for token of type tokten.INT
 	//to make it pass, we need to "register" the parseIntegerLiteral method
 	p.registerPrefix(token.INT, p.parseIntegerLiteral)
+	p.registerPrefix(token.EXCLAIM, p.parsePrefixExpression)
+	p.registerPrefix(token.MINUS, p.parsePrefixExpression)
 
 	return p
 }
@@ -188,11 +190,17 @@ func (p *Parser) parseExpression(precedence int) ast.Expression {
 	prefix := p.prefixParseFns[p.currToken.Type]
 
 	if prefix == nil {
+		p.noPrefixParseFnError(p.currToken.Type)
 		return nil
 	}
 
 	leftExp := prefix() //where does this come from
 	return leftExp
+}
+
+func (p *Parser) noPrefixParseFnError(t token.TokenType) {
+	msg := fmt.Sprintf("no prefix parse function for %s found", t)
+	p.errors = append(p.errors, msg)
 }
 
 //don't understand
@@ -216,4 +224,18 @@ func (p *Parser) parseIntegerLiteral() ast.Expression {
 	}
 	lit.Value = value
 	return lit
+}
+
+//parse prefix expression
+func (p *Parser) parsePrefixExpression() ast.Expression {
+	//create a new instance of a prefix expression and set it as the curernt token
+	//token, operator, right
+	exp := &ast.PrefixExpression{
+		Token: p.currToken,
+		Operator: p.currToken.Literal,
+	}
+	p.nextToken()
+	//what does this mean
+	exp.Right = p.parseExpression(PREFIX)
+	return exp
 }
