@@ -4,6 +4,7 @@ import (
 	"duskterpreter/ast"
 	"duskterpreter/lexer"
 	"duskterpreter/token"
+	"strconv"
 	"fmt"
 )
 
@@ -51,6 +52,9 @@ func New(l *lexer.Lexer) *Parser {
 	//don't understand
 	p.prefixParseFns = make(map[token.TokenType]prefixParseFn)
 	p.registerPrefix(token.IDENT, p.parseIdentifier)
+	//need to add this bcs parseExpression can't find prefixParseFn for token of type tokten.INT
+	//to make it pass, we need to "register" the parseIntegerLiteral method
+	p.registerPrefix(token.INT, p.parseIntegerLiteral)
 
 	return p
 }
@@ -194,4 +198,22 @@ func (p *Parser) parseExpression(precedence int) ast.Expression {
 //don't understand
 func (p *Parser) parseIdentifier() ast.Expression {
 	return &ast.Identifier{Token: p.currToken, Value: p.currToken.Literal}
+}
+
+//parse integer
+
+func (p *Parser) parseIntegerLiteral() ast.Expression {
+	//create a new ast.expression, initalize the token
+	//then create a ok assign, to catch error, return nil to prematurely exit and then assign value if no error
+	lit := &ast.IntegerLiteral{Token: p.currToken}
+
+	//basically an catch block for errors when converting
+	value, err := strconv.ParseInt(p.currToken.Literal, 0, 64)
+	if err != nil {
+		msg := fmt.Sprintf("could not parse %q as integer", p.currToken.Literal)
+		p.errors = append(p.errors, msg)
+		return nil
+	}
+	lit.Value = value
+	return lit
 }
