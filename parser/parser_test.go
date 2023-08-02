@@ -6,11 +6,13 @@ import (
 	"testing"
 )
 
+//test let statements
 func TestLetStatements(t *testing.T) {
 	input := `
-	let x 5;
-	let = 10;
-	let 838383;
+		let x = 2;
+		let y = 10;
+
+		let foobar = 543824;
 	`
 
 	l := lexer.New(input)
@@ -78,6 +80,44 @@ func testLetStatement(t *testing.T, s ast.Statement, name string) bool { //testi
 
 	return true
 }
+
+//test return statements
+func TestReturnStatements(t *testing.T) {
+	input := `
+		return 5;
+		return 5;
+		return 389432;
+	`
+
+	l := lexer.New(input)
+	p := New(l)
+
+	program := p.ParseProgram()
+	checkParserErrors(t, p)
+
+	if program == nil {
+		t.Fatalf("ParseProgram() returned nil")
+	}
+
+	if len(program.Statements) != 3 {
+		t.Fatalf("number of statements is not 3. got: %d", len(program.Statements))
+	}
+
+	//TestReturnStatement()
+	//test if it is the right type, and then value
+	
+	for _, stmt := range program.Statements{
+		returnStmt, ok := stmt.(*ast.ReturnStatement)
+		if !ok {
+			t.Errorf("statement is not a return statement. got:%T", stmt)
+			continue
+		}
+		if returnStmt.Token.Literal != "return" {
+			t.Errorf("returnStmt token literal is not the same. got:%q", returnStmt.TokenLiteral())
+		}
+	}
+}
+
 
 func checkParserErrors (t *testing.T, p *Parser) {
 	error := p.errors
