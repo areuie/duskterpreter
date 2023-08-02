@@ -39,6 +39,16 @@ const (
 	CALL //myFunction(X)
 )
 
+var precedences = map[token.TokenType]int {
+	token.EQ: EQUALS,
+	token.NOTEQ: EQUALS,
+	token.LSTHAN: LESSGREATER,
+	token.GRTHAN: LESSGREATER,
+	token.ADD: SUM,
+	token.MINUS: SUM,
+	token.DIVIDE: PRODUCT,
+	token.MULTIPLY: PRODUCT,
+}
 
 func New(l *lexer.Lexer) *Parser {
 	p := &Parser{
@@ -57,6 +67,16 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefix(token.INT, p.parseIntegerLiteral)
 	p.registerPrefix(token.EXCLAIM, p.parsePrefixExpression)
 	p.registerPrefix(token.MINUS, p.parsePrefixExpression)
+
+	p.infixParseFns = make(map[token.TokenType]infixParseFn)
+	p.registerInfix(token.EQ, p.parseInfixExpression)
+	p.registerInfix(token.NOTEQ, p.parseInfixExpression)
+	p.registerInfix(token.LSTHAN, p.parseInfixExpression)
+	p.registerInfix(token.GRTHAN, p.parseInfixExpression)
+	p.registerInfix(token.ADD, p.parseInfixExpression)
+	p.registerInfix(token.MINUS, p.parseInfixExpression)
+	p.registerInfix(token.DIVIDE, p.parseInfixExpression)
+	p.registerInfix(token.MULTIPLY, p.parseInfixExpression)
 
 	return p
 }
@@ -195,6 +215,15 @@ func (p *Parser) parseExpression(precedence int) ast.Expression {
 	}
 
 	leftExp := prefix() //where does this come from
+	//GET BACK TO THIS TO UNDERSTAND
+	for !p.peekTokenIs(token.SEMICOLON) && precedence < p.peekPrecedence() {
+		infix := p.infixParseFns[p.peekToken.Type]
+		if infix == nil {
+			return leftExp
+		}
+		p.nextToken()
+		leftExp = infix(leftExp)
+	}
 	return leftExp
 }
 
@@ -238,4 +267,30 @@ func (p *Parser) parsePrefixExpression() ast.Expression {
 	//what does this mean
 	exp.Right = p.parseExpression(PREFIX)
 	return exp
+}
+
+//create a function with infix, where there a param for left side already evaluated and right side need to put in
+func (p *Parser) parseInfixExpression(left ast.Expression) ast.Expression {
+	//create a new instance of it
+	exp := &ast.InfixExpression{Token: p.currToken, Operator: p.currToken.Literal, Left: left,}
+	precedence := p.currPrecedence()
+	p.nextToken()
+	exp.Right = p.parseExpression(precedence)
+
+	return exp
+}
+
+//peek and cur precedence
+func (p *Parser) currPrecedence() int{
+	if p, ok := precedences[p.currToken.Type]; ok {
+		return p
+	}
+	return LOWEST
+}
+
+func (p *Parser) peekPrecedence() int{
+	if p, ok := precedences[p.peekToken.Type]; ok {
+		return p
+	}
+	return LOWEST
 }
