@@ -17,7 +17,26 @@ type Parser struct {
 	currToken token.Token
 	peekToken token.Token
 	errors []string
+
+	prefixParseFns map[token.TokenType]prefixParseFn
+	infixParseFns map[token.TokenType]infixParseFn
 }
+
+type ( //just to have better naming
+	prefixParseFn func() ast.Expression
+	infixParseFn func(ast.Expression) ast.Expression
+)
+
+const (
+	_ int = iota //gives following constants incrementing nums as values, blank _ is value 0 (following is 1-7)
+	LOWEST
+	EQUALS // == 
+	LESSGREATER // < or >
+	SUM // +
+	PRODUCT // *
+	PREFIX // -X or !X
+	CALL //myFunction(X)
+)
 
 
 func New(l *lexer.Lexer) *Parser {
@@ -28,6 +47,10 @@ func New(l *lexer.Lexer) *Parser {
 
 	p.nextToken()
 	p.nextToken()
+
+	//don't understand
+	p.prefixParseFns = make(map[token.TokenType]prefixParseFn)
+	p.registerPrefix(token.IDENT, p.parseIdentifier)
 
 	return p
 }
@@ -68,7 +91,7 @@ func (p *Parser) parseStatement() ast.Statement {
 		case token.RETURN:
 			return p.parseReturnStatement()
 		default:
-			return nil
+			return p.parseExpressionStatement()
 	}
 } 
 
@@ -107,14 +130,14 @@ func (p *Parser) expectPeek(t token.TokenType) bool {
 		return true
 	}
 	p.peekError(t)
-	return false
+	return false // --> return 12345;
 }
 
 //parse return statement
 func (p *Parser) parseReturnStatement() *ast.ReturnStatement {
 	stmt := &ast.ReturnStatement{Token: p.currToken}
 	p.nextToken()
-	
+
 	for p.currToken.Type != token.SEMICOLON {
 		p.nextToken()
 	}
@@ -132,3 +155,43 @@ func (p *Parser) peekError(t token.TokenType){
 	p.errors = append(p.errors, msg)
 }
 
+//infix/prefix
+func (p *Parser) registerPrefix(tokenType token.TokenType, fn prefixParseFn) {
+	p.prefixParseFns[tokenType] = fn
+}
+
+func (p *Parser) registerInfix(tokenType token.TokenType, fn infixParseFn) {
+	p.infixParseFns[tokenType] = fn
+}
+
+//identifier statement
+// 1 + 1
+// 2 + 2
+func (p *Parser) parseExpressionStatement() *ast.ExpressionStatement{
+	stmt := &ast.ExpressionStatement{Token: p.currToken}
+
+	stmt.Expression = p.parseExpression(LOWEST)
+
+	if p.peekTokenIs(token.SEMICOLON) {
+		p.nextToken()
+	}
+
+	return stmt
+}
+
+//checks whethere there is a parsing function associated with the token type
+func (p *Parser) parseExpression(precedence int) ast.Expression {
+	prefix := p.prefixParseFns[p.currToken.Type]
+
+	if prefix == nil {
+		return nil
+	}
+
+	leftExp := prefix() //where does this come from
+	return leftExp
+}
+
+//don't understand
+func (p *Parser) parseIdentifier() ast.Expression {
+	return &ast.Identifier{Token: p.currToken, Value: p.currToken.Literal}
+}
