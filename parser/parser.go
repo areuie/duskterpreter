@@ -65,6 +65,8 @@ func New(l *lexer.Lexer) *Parser {
 	//need to add this bcs parseExpression can't find prefixParseFn for token of type tokten.INT
 	//to make it pass, we need to "register" the parseIntegerLiteral method
 	p.registerPrefix(token.INT, p.parseIntegerLiteral)
+	p.registerPrefix(token.TRUE, p.parseBoolean)
+	p.registerPrefix(token.FALSE, p.parseBoolean)
 	p.registerPrefix(token.EXCLAIM, p.parsePrefixExpression)
 	p.registerPrefix(token.MINUS, p.parsePrefixExpression)
 
@@ -293,4 +295,8 @@ func (p *Parser) peekPrecedence() int{
 		return p
 	}
 	return LOWEST
+}
+
+func (p *Parser) parseBoolean () ast.Expression {
+	return &ast.Boolean{Token: p.currToken, Value: p.currTokenIs(token.TRUE)}
 }
